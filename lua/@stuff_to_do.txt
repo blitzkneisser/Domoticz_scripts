@@ -1,0 +1,5 @@
+- In der Nacht: Nicht Daymode, nur Temperatur anheben!
+- Anwesenheit Wohnzimmer
+- Anwesenheit Arbeitszimmer
+- Messung Ölpegel Durchschnittswert!
+- Email Ölpegel Datum schicken

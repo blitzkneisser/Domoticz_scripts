@@ -1,0 +1,18 @@
+
+commandArray = {}
+
+local sw_xmas = 'Weihnachtsbeleuchtung'
+local std = tonumber(os.date("%H"));
+local min = tonumber(os.date("%M"));
+
+if (timeofday['Daytime']) or ((std > 1) and (std <= 12)) then
+   if otherdevices[sw_xmas] == 'On' then
+      commandArray[sw_xmas]='Off'
+   end
+else
+   if otherdevices[sw_xmas] == 'Off' then
+      commandArray[sw_xmas]='On'
+   end
+end
+
+return commandArray
