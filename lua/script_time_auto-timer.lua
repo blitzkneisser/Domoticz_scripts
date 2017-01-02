@@ -22,8 +22,10 @@ local motion2   = 'BWM1 - Eingang'
 --end
 
 if otherdevices[sw_waku] == 'On' then
---   print('Waku is ein!')
-   if ((MiscClass.timedifference(otherdevices_lastupdate[sw_waku]) > t_waku) and (otherdevices[motion1] == 'Off' )) then
+   print('Waku is ein seit ' .. MiscClass.timedifference(otherdevices_lastupdate[sw_waku]) .. ' Sekunden, auto-aus nach ' .. t_waku .. ' Sekunden')
+   --if ((MiscClass.timedifference(otherdevices_lastupdate[sw_waku]) > t_waku) and (otherdevices[motion1] == 'Off' )) then
+   if (MiscClass.timedifference(otherdevices_lastupdate[sw_waku]) > t_waku) then
+      print('Waku wird ausgeschalten')
       commandArray[sw_waku]='Off'     
    end
 end

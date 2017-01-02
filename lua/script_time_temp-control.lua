@@ -1,3 +1,7 @@
+package.path    = package.path .. ";/home/pi/domoticz/scripts/lua/?.lua"
+local MiscClass = require("func_misc")
+local sch_path  = "/home/pi/domoticz/scripts/lua/"
+
 -- hysteresis function for temperature control
 function hyst (temp_m, temp_s, hyst)
    if temp_m <= (temp_s - (hyst / 3 * 2)) then -- 2/3 below
@@ -38,6 +42,7 @@ local m_wohn3  = 'Wohnzimmer Terrasse'
 local s_wohn3  = 'Wohnzimmer Terrasse S'
 
 local newtemp = 0.0
+local oldtemp = 0.0
 local difftemp_user = "0.0"
 local diffroom_user = "keiner..."
 
@@ -65,6 +70,7 @@ hy_kinder = uservariables["hyst_kinderzimmer"]
 hy_schlaf = uservariables["hyst_schlafzimmer"]
 hy_wohn   = uservariables["hyst_wohnzimmer"]
 
+local min   = tonumber(os.date("%M"))
 
 -- temperature override switches active?
 local bo_heat = otherdevices[or_anheben]  == 'On' -- anheben on?
@@ -191,10 +197,29 @@ if otherdevices[sw_summer] == 'On' then
    commandArray[2] = {['UpdateDevice']= '75|0|' .. temp_ts}
 -- too cold? set OpenTherm thermostat value higher for heating (max tempdiff + fixed)
 else
+   local chg_temp = false
    if (bo_toocold) then
-      newtemp = otherdevices_temperature[m_wohn] + max_val + t_rise
-      print(newtemp)
-      commandArray[2] = {['UpdateDevice']= '75|0|' .. newtemp}
+      oldtemp =  math.ceil(otherdevices[s_wohn])
+      newtemp = math.ceil(otherdevices_temperature[m_wohn] + max_val + t_rise)
+      if (newtemp % 2 ~= 0) then
+         newtemp = newtemp + 1 -- always even values
+      end
+      -- temperature is rising or last update is longer ago than 15 minutes
+      if ((oldtemp < newtemp) or (MiscClass.timedifference(otherdevices_lastupdate[s_wohn]) > 15) ) then
+         chg_temp = true
+      end      
+      print('Temperature check finished, analyzing... Status: ' .. tostring(chg_temp))
+      local diff = math.floor(otherdevices[s_wohn] - newtemp)
+      --print('Diff: ' .. diff)
+      if (chg_temp) then -- only if temp higher or temp drop every ten minutes
+         if (diff == 0) then
+	       print('Heating required, but thermostat value already correct: ' .. math.floor(otherdevices[s_wohn]) .. '/' .. newtemp)
+         else
+               print('New thermostat value: ' .. newtemp .. ' Old: ' .. otherdevices[s_wohn])
+               commandArray[2] = {['UpdateDevice']= '75|0|' .. newtemp}
+	       print('Heating required: ' .. newtemp)
+         end
+      end
    elseif bo_daymode then
       commandArray[2] = {['UpdateDevice']= '75|0|' .. temp_tt}
    else

@@ -10,6 +10,7 @@ if (commandArray == nil) then -- for console run
 end
 
 local schedules = {}
+local overrides = {}
 
 if otherdevices[sw_summer] == 'On' then
 --   schedules [666] = 'temp_sommer.txt'
@@ -33,15 +34,57 @@ else
 end
 
 -- Jahreszeit-Unabhängig:
-schedules [63]  = 'switch_hwasser.txt' -- Heißwasserbereitung
+schedules [63]  = 'switch_hwasser.txt'    -- Heißwasserbereitung
+schedules [372] = 'switch_xmas.txt'       -- Weihnachtsbeleuchtung
+schedules [373] = 'switch_xmas.txt'       -- Weihnachtsbeleuchtung
+schedules [376] = 'switch_override.txt'   -- Reset Temp overrides
+
+-- Override-switches
+overrides [145] = 375 -- Arbeitszimmer
+overrides [123] = 378 -- Dusche
+overrides [121] = 379 -- Schlafzimmer
+
+-- Override-handling
+local or_off = MiscClass.idx2dev(376)
+local or_on  = MiscClass.idx2dev(377)
+-- is override-reset active?
+if (otherdevices[or_off] == 'On') then
+   -- all overrides enabled? switch them off!
+   commandArray[9998] = {[or_on]='Off'}
+   for idx, switch in pairs( overrides ) do
+      -- get index of override-switch
+      local device = MiscClass.idx2dev(switch)
+      -- and switch it off!
+      commandArray[idx] = {[device]='Off'}
+   end
+   commandArray[9999] = {[or_off]='Off'}
+   print("All Temp overrides off!")
+elseif (otherdevices[or_on] == 'On') then
+   for idx, switch in pairs( overrides ) do
+      -- get index of override-switch
+      local device = MiscClass.idx2dev(switch)
+      -- and switch it on!
+      commandArray[idx] = {[device]='On'}
+      -- or on switch is no longer needed
+      commandArray[9998] = {[or_on]='Off'}
+      print("All Temp overrides on!")
+   end
+end
+
 
 print("Table")
 local ERR = {}
 local cnt = 1
 for idx, sched in pairs( schedules ) do
    local device = MiscClass.idx2dev(idx)
-   print(cnt .. ": Schedule " .. sched .. " for device id " .. idx .. " -> " .. device)
-   ERR [idx] = SchClass.schedule(sch_path .. sched, idx, cnt)
+   local or_switch = MiscClass.idx2dev(overrides[idx])
+   
+   if (otherdevices[or_switch] == 'On') then
+        print(cnt .. ": Override-switch for " .. device .. " (" .. or_switch .. ") is active. Temp will not change")
+   else
+	print(cnt .. ": Schedule " .. sched .. " for device id " .. idx .. " -> " .. device)
+	ERR [idx] = SchClass.schedule(sch_path .. sched, idx, cnt)
+   end
    cnt = cnt + 1
 end
 
